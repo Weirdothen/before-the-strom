@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Before The Storm</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✨%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Pacifico&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CORE STYLING VARIABLES AND CANVAS MATRIX --- */
+        :root {
+            --pink-soft: #FFB6C1;
+            --pink-rose: #FF69B4;
+            --cream-white: #FFFDF9;
+            --lavender-light: #E6E6FA;
+            --gold-accent: #FFD700;
+            --text-dark: #3A2F35;
+            --shadow-flat: 2px 2px 5px rgba(0,0,0,0.05);
+            --shadow-polaroid: 5px 12px 25px rgba(58, 47, 53, 0.15);
+            --shadow-lift: 12px 24px 35px rgba(58, 47, 53, 0.25);
+            --paper-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' fill='transparent'/%3E%3C/svg%3E");
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Dancing Script', cursive;
+            background-color: var(--cream-white);
+            color: var(--text-dark);
+            user-select: none;
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 32 32'%3E%3Cpath fill='%23FFF' stroke='%23FF69B4' stroke-width='2' stroke-linejoin='round' d='M3 3 L3 25 L9 19 L14 30 L18 28 L13 17 L19 17 Z'/%3E%3C/svg%3E") 0 0, auto;
+            scroll-behavior: smooth;
+        }
+
+        .cursor-trail-dot {
+            position: fixed;
+            top: -5px; left: -5px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--pink-rose);
+            pointer-events: none;
+            z-index: 9999;
+            will-change: transform;
+        }
+
+        /* --- IMMERSIVE PARTICLES AND ENVIRONMENT ANIMATION LAYER --- */
+        #stage-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            z-index: 10;
+        }
+
+        #environment-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 182, 193, 0.4);
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .cloud-element {
+            position: absolute;
+            background: rgba(255, 253, 249, 0.6);
+            filter: blur(30px);
+            border-radius: 50%;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .star-element {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 6px 2px white;
+            pointer-events: none;
+        }
+
+        .paper-scrap {
+            position: absolute;
+            background: rgba(230, 230, 250, 0.5);
+            border-radius: 2px;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        /* --- APP SCENE CONTROL ENGINE --- */
+        .app-scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 5;
+        }
+
+        #scene1, #scene4 {
+            justify-content: center;
+        }
+
+        .scene-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* --- GLOBAL TEXT ELEMENT ANIMATION PROPERTIES --- */
+        .typewriter-output {
+            font-size: 2.5rem;
+            color: var(--text-dark);
+            text-align: center;
+            min-height: 4.5rem;
+            max-width: 85%;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+            line-height: 1.4;
+        }
+
+        .cursor-blink::after {
+            content: '│';
+            animation: blinker 0.8s steps(2, start) infinite;
+            color: var(--pink-rose);
+        }
+
+        @keyframes blinker { to { opacity: 0; } }
+
+        /* --- SCENE 1 LAYOUT: THE SCATTER ENTERING TABLEAU --- */
+        #scene1-desk {
+            width: 100%;
+            height: 55%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .polaroid-intro-node {
+            position: absolute;
+            background-color: white;
+            padding: 15px 15px 45px 15px;
+            box-shadow: var(--shadow-polaroid);
+            transform: translate(0, 120vh) rotate(0deg);
+            transition: transform 3s cubic-bezier(0.175, 0.885, 0.32, 1.15), box-shadow 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .polaroid-intro-node::before, .scrapbook-polaroid::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--paper-texture);
+            pointer-events: none;
+        }
+
+        .polaroid-intro-node img, .scrapbook-polaroid img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 1px solid rgba(0,0,0,0.05);
+            pointer-events: none;
+        }
+
+        /* --- SCENE 2 DESIGN LAYOUT: SYSTEM INTERACTIVE DESK --- */
+        #scene2 {
+            padding: 0 20px 80px;
+        }
+
+        #scene2.scroll-locked {
+            overflow-y: hidden !important;
+        }
+
+        .scrapbook-desk-plane {
+            position: relative;
+            width: 100%;
+            max-width: 1300px;
+            min-height: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 60px;
+        }
+
+        #desk-grid-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 105, 180, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 105, 180, 0.03) 1px, transparent 1px);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .magical-sparkle-trail {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            will-change: transform;
+        }
+
+        /* --- SCENE 1 SCRAPBOOK BACKGROUND --- */
+        #scene1 {
+            background: radial-gradient(circle, #FFF5F7 0%, #FFE3E8 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        #scene1::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--paper-texture);
+            opacity: 0.85;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .scene1-bg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .s1-circle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            will-change: transform;
+            z-index: 2;
+        }
+        .s1-star {
+            position: absolute;
+            color: #FFD700;
+            font-size: 14px;
+            pointer-events: none;
+            animation: s1-twinkle 3s infinite ease-in-out;
+            z-index: 2;
+        }
+        @keyframes s1-twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2) rotate(15deg); }
+        }
+        .s1-heart {
+            position: absolute;
+            font-size: 16px;
+            color: rgba(255, 105, 180, 0.6);
+            pointer-events: none;
+            will-change: transform;
+            z-index: 2;
+        }
+        .s1-light-particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            filter: blur(2px);
+            pointer-events: none;
+            will-change: transform;
+            z-index: 2;
+        }
+        
+        .s1-corner-decor {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            pointer-events: none;
+            z-index: 3;
+            animation: s1-corner-float 6s infinite ease-in-out alternate;
+            will-change: transform;
+        }
+        .s1-top-left { top: 0; left: 0; }
+        .s1-top-right { top: 0; right: 0; animation-delay: -1.5s; }
+        .s1-bottom-left { bottom: 0; left: 0; animation-delay: -3s; }
+        .s1-bottom-right { bottom: 0; right: 0; animation-delay: -4.5s; }
+        
+        @keyframes s1-corner-float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(5px, 5px) rotate(2deg); }
+        }
+        
+        .s1-corner-decor div:not(.s1-masking-tape) {
+            position: absolute;
+            font-size: 1.5rem;
+            filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.1));
+        }
+        
+        .s1-top-left .s1-doodle-flower { top: 50px; left: 40px; }
+        .s1-top-left .s1-doodle-sparkle { top: 20px; left: 90px; font-size: 1rem; }
+        .s1-top-left .s1-doodle-heart { top: 80px; left: 15px; font-size: 1.2rem; }
+        
+        .s1-top-right .s1-doodle-flower { top: 40px; right: 50px; }
+        .s1-top-right .s1-doodle-star { top: 85px; right: 20px; font-size: 1.2rem; }
+        .s1-top-right .s1-doodle-heart { top: 15px; right: 90px; font-size: 1.1rem; }
+        
+        .s1-bottom-left .s1-doodle-flower { bottom: 50px; left: 45px; }
+        .s1-bottom-left .s1-doodle-sparkle { bottom: 85px; left: 20px; font-size: 1.1rem; }
+        .s1-bottom-left .s1-doodle-star { bottom: 15px; left: 80px; font-size: 1.2rem; }
+        
+        .s1-bottom-right .s1-doodle-flower { bottom: 45px; right: 45px; }
+        .s1-bottom-right .s1-doodle-heart { bottom: 80px; right: 15px; font-size: 1.2rem; }
+        .s1-bottom-right .s1-doodle-sparkle { bottom: 15px; right: 80px; font-size: 1.1rem; }
+        
+        .s1-masking-tape {
+            position: absolute;
+            width: 90px;
+            height: 30px;
+            background: rgba(254, 219, 208, 0.7);
+            backdrop-filter: blur(1.5px);
+            border-left: 2px dashed rgba(255,255,255,0.6);
+            border-right: 2px dashed rgba(255,255,255,0.6);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+            z-index: 4;
+            pointer-events: none;
+        }
+        .tl-tape { top: 15px; left: -20px; transform: rotate(-35deg); }
+        .tr-tape { top: 15px; right: -20px; transform: rotate(35deg); }
+        .bl-tape { bottom: 15px; left: -20px; transform: rotate(35deg); }
+        .br-tape { bottom: 15px; right: -20px; transform: rotate(-35deg); }
+
+        .interactive-headline-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 40px;
+            margin-top: 40px;
+            margin-bottom: 50px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .headline-text-group {
+            text-align: left;
+            max-width: 50%;
+        }
+
+        .headline-photo-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 45%;
+            z-index: 15;
+        }
+
+        .main-scrapbook-title {
+            font-family: 'Pacifico', cursive;
+            font-size: clamp(3.2rem, 7vw, 5.5rem);
+            color: #C2185B;
+            text-shadow: 2px 3px 8px rgba(194,24,91,0.2);
+            display: inline-block;
+            text-align: left;
+        }
+
+        .main-scrapbook-subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 15px;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* Profile Anchor Photo Frame Blueprint */
+        .profile-photo-anchor {
+            width: 520px;
+            height: 340px;
+            border: 14px solid #3E2723;
+            outline: 4px solid #5C4033;
+            outline-offset: -20px;
+            box-shadow: 0 0 0 4px #271510, 0 0 0 8px #4A2E1B, 
+                        0 0 0 12px #1B0C07, inset 0 0 0 4px #4A2E1B,
+                        inset 0 0 0 8px #3E2723, 0 20px 50px rgba(0,0,0,0.4);
+            background: #271510;
+            padding: 10px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 15;
+            margin-bottom: 20px;
+            opacity: 1;
+            transform-origin: center center;
+            animation: swayFrame 8s ease-in-out infinite;
+            will-change: transform;
+        }
+
+        .profile-photo-anchor img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        @keyframes swayFrame {
+            0% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+            100% { transform: rotate(-3deg); }
+        }
+
+        .profile-photo-anchor .caption-line, .scrapbook-polaroid .caption-line {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            padding: 0 15px;
+            height: auto;
+            line-height: 1.2;
+            white-space: normal;
+        }
+
+        /* Movie Tape Layout */
+        #movie-tape-container {
+            display: flex;
+            flex-flow: row wrap;
+            justify-content: center;
+            gap: 60px 120px;
+            margin-bottom: 60px;
+            width: 100%;
+            max-width: 1300px;
+        }
+
+        .film-snippet-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 260px;
+            animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+            will-change: transform;
+        }
+
+        @keyframes fadeSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .film-snippet-row:hover {
+            transform: scale(1.05) translateY(-5px) !important;
+            z-index: 100;
+        }
+
+        .movie-tape-container-piece {
+            width: 100%;
+            background: #111;
+            padding: 20px 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            border-radius: 4px;
+        }
+
+        .movie-tape-container-piece::before, .movie-tape-container-piece::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 20px;
+            background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 15px, var(--cream-white) 15px, var(--cream-white) 25px);
+        }
+
+        .movie-tape-container-piece::before { left: 3px; }
+        .movie-tape-container-piece::after { right: 3px; }
+
+        .movie-tape-frame {
+            background: #000;
+            padding: 15px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .movie-tape-frame img {
+            width: 100%;
+            border-radius: 2px;
+            object-fit: cover;
+            margin-bottom: 15px;
+            filter: sepia(0.6) contrast(0.9) brightness(0.9);
+            transition: filter 0.4s ease;
+        }
+
+        .movie-tape-frame:hover img {
+            filter: sepia(0) contrast(1.1) brightness(1);
+        }
+
+        .viewfinder-bracket {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid rgba(255,255,255,0.6);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .bracket-tl { top: 15px; left: 15px; border-right: none; border-bottom: none; }
+        .bracket-tr { top: 15px; right: 15px; border-left: none; border-bottom: none; }
+        .bracket-bl { bottom: 45px; left: 15px; border-right: none; border-top: none; }
+        .bracket-br { bottom: 45px; right: 15px; border-left: none; border-top: none; }
+
+        .film-number {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            color: #ffd700;
+            font-family: monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            transform: rotate(-90deg);
+            transform-origin: left top;
+            opacity: 0.7;
+        }
+
+        .movie-tape-caption {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.2rem;
+            color: var(--text-dark);
+            text-align: center;
+            font-weight: 700;
+            white-space: normal;
+            line-height: 1.2;
+            margin-top: 15px;
+            max-width: 280px;
+        }
+
+        .pinned-sticky {
+            position: absolute;
+            width: 180px;
+            background: #FFF9C4;
+            padding: 20px;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.1);
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.6rem;
+            color: var(--text-dark);
+            text-align: center;
+            z-index: 5;
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in;
+        }
+        .pushpin {
+            position: absolute;
+            top: -15px; left: 50%;
+            transform: translateX(-50%);
+            width: 30px; height: 30px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            z-index: 21;
+        }
+        .pinned-sticky.dropped {
+            transform: translateY(200px) rotate(15deg) !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .pushpin.popped {
+            transform: translate(-50%, -10px) scale(0) !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .s1-floating-quote {
+            position: absolute;
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.2rem;
+            color: rgba(255, 105, 180, 0.6);
+            pointer-events: none;
+            z-index: 1;
+            animation: s1QuoteFloat 8s infinite ease-in-out alternate;
+            white-space: nowrap;
+            will-change: transform;
+        }
+        .s4-floating-word {
+            position: absolute;
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.8rem;
+            color: rgba(255, 105, 180, 0.7);
+            pointer-events: none;
+            animation: s1QuoteFloat 6s infinite ease-in-out alternate;
+            will-change: transform;
+        }
+        @keyframes s1QuoteFloat {
+            0% { transform: translateY(0) scale(1); opacity: 0.4; }
+            100% { transform: translateY(-15px) scale(1.05); opacity: 0.8; }
+        }
+
+        .s2-washi-stripe {
+            position: absolute;
+            width: 120px;
+            height: 35px;
+            background: repeating-linear-gradient(45deg, rgba(255,105,180,0.2) 0, rgba(255,105,180,0.2) 10px, rgba(230,230,250,0.2) 10px, rgba(230,230,250,0.2) 20px);
+            backdrop-filter: blur(2px);
+            border-left: 2px dashed rgba(255,255,255,0.7);
+            border-right: 2px dashed rgba(255,255,255,0.7);
+            z-index: 5;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+            pointer-events: none;
+        }
+
+        /* Adhesive Decorative Overlays */
+        .washi-tape-overlay {
+            position: absolute;
+            height: 28px;
+            background: rgba(255, 105, 180, 0.25);
+            backdrop-filter: blur(1px);
+            border-left: 3px dashed rgba(255,255,255,0.5);
+            border-right: 3px dashed rgba(255,255,255,0.5);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .paperclip-overlay {
+            position: absolute;
+            width: 20px;
+            height: 45px;
+            border: 2px solid #B0BEC5;
+            border-radius: 10px;
+            background: transparent;
+            pointer-events: none;
+            z-index: 6;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* --- THE FOLDED PAPER BUTTON MATRIX --- */
+        .button-paper-row {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 100%;
+            margin-top: 20px;
+            z-index: 20;
+        }
+
+        .paper-tag-button {
+            position: relative;
+            display: inline-block;
+            border-radius: 8px;
+            background: linear-gradient(160deg, #FFFEF0 0%, #FDF3D0 100%);
+            border: 1px solid rgba(180,140,60,0.35);
+            color: #5C3D1E;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.25rem;
+            box-shadow: 3px 5px 16px rgba(120,80,20,0.18), 
+                        inset 0 1px 0 rgba(255,255,255,0.8);
+            background-image: linear-gradient(transparent calc(100% - 1px), 
+                              rgba(180,140,60,0.1) 1px);
+            background-size: 100% 24px;
+            padding: 18px 38px;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+            z-index: 20;
+        }
+
+        .paper-tag-button:hover {
+            transform: translateY(-4px) rotate(-0.5deg);
+            box-shadow: 5px 10px 24px rgba(120,80,20,0.28), 
+                        0 0 12px rgba(200,160,60,0.2);
+        }
+
+        .paper-tag-button:active {
+            transform: translateY(-2px) scale(1.01);
+        }
+
+
+
+        /* --- FULL SCREEN REALISTIC MODAL/UNFOLD OVERLAYS --- */
+        .modal-canvas-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(58, 47, 53, 0.45);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-canvas-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Photo Previewer Mode */
+        .zoomed-photo-container {
+            max-width: 90%;
+            max-height: 85%;
+            background: white;
+            padding: 20px 20px 70px 20px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.3);
+            transform: scale(0.6) rotate(-5deg);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+            position: relative;
+        }
+
+        .modal-canvas-overlay.active .zoomed-photo-container {
+            transform: scale(1) rotate(0deg);
+        }
+
+        .zoomed-photo-container img {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            display: block;
+        }
+        .zoomed-photo-container .caption {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            max-width: 90%;
+            text-align: center;
+            background: rgba(255,255,255,0.88);
+            padding: 8px 14px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            color: #3A2F35;
+            font-weight: 700;
+            font-size: 1.8rem;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        /* --- HIGH FIDELITY REALISTIC UNFOLDING PAPER MATRIX --- */
+        .origami-letter-viewport {
+            width: 90%;
+            max-width: 580px;
+            perspective: 1500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .unfolding-paper-module {
+            width: 100%;
+            background: #FFFDF4;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+            transform-style: preserve-3d;
+            opacity: 0;
+        }
+
+        /* Interior Real Letter Template Styles */
+        .handwritten-letter-pane {
+            padding: 40px 45px;
+            font-size: 1.6rem;
+            line-height: 1.5;
+            max-height: 75vh;
+            overflow-y: auto;
+            background-image: linear-gradient(rgba(255, 105, 180, 0.06) 1px, transparent 1px);
+            background-size: 100% 2.4rem;
+            background-attachment: local;
+            hyphens: none;
+            -webkit-hyphens: none;
+            word-break: keep-all;
+        }
+
+        .handwritten-letter-pane::before {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background-image: var(--paper-texture);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .letter-header {
+            font-family: 'Pacifico', cursive;
+            color: var(--pink-rose);
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+        }
+
+        .letter-paragraph {
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        /* --- SCENE 3 DESIGN LAYOUT: THE MULTI-NOTE DECK --- */
+        #scene3 {
+            background-color: #1C1018;
+            padding-top: 0;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .back-nav-tag {
+            position: absolute;
+            top: 25px;
+            left: 30px;
+            background: #FFF;
+            padding: 10px 20px;
+            border: 1px dashed var(--pink-rose);
+            box-shadow: var(--shadow-flat);
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 700;
+            z-index: 50;
+            transition: transform 0.2s;
+        }
+
+        .back-nav-tag:hover { transform: scale(1.05) rotate(-2deg); }
+
+        /* Realistic Cream Envelope Folds */
+        .giant-central-envelope {
+            position: relative;
+            width: 380px;
+            height: 260px;
+            background: #FDF6E3;
+            border: 1px solid rgba(160,120,70,0.3);
+            box-shadow: 0 8px 32px rgba(80,50,20,0.25), 
+                        inset 0 -4px 12px rgba(0,0,0,0.06);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            cursor: default;
+            transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.5s ease;
+        }
+
+        .giant-central-envelope::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom right, transparent calc(50% - 0.75px), rgba(180,150,100,0.25) 50%, transparent calc(50% + 0.75px));
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .giant-central-envelope::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to top right, transparent calc(50% - 0.75px), rgba(180,150,100,0.25) 50%, transparent calc(50% + 0.75px));
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .envelope-back {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #FDF6E3;
+            border-radius: 4px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .envelope-front-left {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #FDF6E3;
+            clip-path: polygon(0% 0%, 52% 50%, 0% 100%);
+            z-index: 3;
+            filter: drop-shadow(2px 0 3px rgba(0,0,0,0.03));
+        }
+        
+        .envelope-front-right {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #FDF6E3;
+            clip-path: polygon(100% 0%, 48% 50%, 100% 100%);
+            z-index: 3;
+            filter: drop-shadow(-2px 0 3px rgba(0,0,0,0.03));
+        }
+        
+        .envelope-front-bottom {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #FDF6E3;
+            clip-path: polygon(0% 100%, 50% 48%, 100% 100%);
+            z-index: 4;
+            filter: drop-shadow(0 -3px 5px rgba(0,0,0,0.05));
+        }
+        
+        .giant-envelope-flap {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #EDE0C4;
+            clip-path: polygon(0% 0%, 50% 50%, 100% 0%);
+            transform-origin: top center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 5;
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.1));
+        }
+        
+        .envelope-front-left::after,
+        .envelope-front-right::after,
+        .envelope-front-bottom::after,
+        .giant-envelope-flap::after,
+        .envelope-back::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: var(--paper-texture);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        
+        .giant-wax-seal-container {
+            position: absolute;
+            top: 105px;
+            left: calc(50% - 35px);
+            width: 70px;
+            height: 70px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+        
+        .giant-wax-seal {
+            width: 64px;
+            height: 64px;
+            background-image: radial-gradient(circle, #C62828 0%, #B71C1C 70%, #880E4F 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFDF4;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.2);
+            border: 2px solid #A01B30;
+            animation: sealPulse 2s infinite ease-in-out;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .giant-wax-seal-container:hover .giant-wax-seal {
+            transform: scale(1.08);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+        }
+        
+        .giant-wax-seal-container:active .giant-wax-seal {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        @keyframes sealPulse {
+            0%, 100% { box-shadow: 0 4px 10px rgba(179, 29, 56, 0.4), 0 0 0 0px rgba(179, 29, 56, 0.2); }
+            50% { box-shadow: 0 6px 15px rgba(179, 29, 56, 0.6), 0 0 0 8px rgba(179, 29, 56, 0); }
+        }
+        
+
+
+        /* Inner Pocket Contents */
+        .envelope-papers {
+            position: absolute;
+            width: 90%;
+            height: 80%;
+            bottom: 10px;
+            left: 5%;
+            z-index: 3;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        
+        .giant-central-envelope.opened .envelope-papers {
+            pointer-events: auto;
+        }
+        
+        .paper-inside {
+            position: absolute;
+            width: 180px;
+            height: 125px;
+            background: #FFFDF4;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            border-radius: 2px;
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            color: var(--pink-rose);
+            opacity: 0;
+            transform: translateY(40px);
+            pointer-events: none;
+        }
+        
+        .paper-inside::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--paper-texture);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        
+        .paper-inside.revealed {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .paper-inside.revealed.p1 {
+            transform: translateY(-50px) rotate(-10deg) translate(-35px, 5px);
+            background: #FFFDF0;
+            z-index: 10;
+        }
+        
+        .paper-inside.revealed.p2 {
+            transform: translateY(-50px) rotate(5deg) translate(35px, 0px);
+            background: #FAF5EB;
+            z-index: 9;
+        }
+        
+        .paper-inside.revealed.p3 {
+            transform: translateY(-50px) rotate(-2deg) translate(0px, -10px);
+            background: #FFF9F2;
+            z-index: 11;
+        }
+        
+        .paper-inside.revealed:hover {
+            transform: translateY(-75px) scale(1.08) rotate(0deg) !important;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+            z-index: 20 !important;
+        }
+
+        /* Draggable physical folder items layer blueprint */
+        .capsule-scatter-yard {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        .folded-note-item {
+            position: absolute;
+            width: 195px;
+            height: 105px;
+            background: #FCF8E3;
+            border: 1px solid rgba(58,47,53,0.12);
+            box-shadow: 2px 6px 15px rgba(0,0,0,0.06);
+            padding: 12px;
+            cursor: grab;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            transform-style: preserve-3d;
+            will-change: transform;
+            opacity: 0;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.5s ease;
+        }
+
+        .folded-note-item::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 0; width: 100%; height: 1px;
+            border-top: 1px dashed rgba(58,47,53,0.15);
+            pointer-events: none;
+        }
+
+        .folded-note-item::after {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background-image: var(--paper-texture);
+            pointer-events: none;
+        }
+
+        .folded-note-item:active {
+            cursor: grabbing;
+            box-shadow: var(--shadow-lift);
+        }
+
+        /* Dynamic Unfolded Overlay Window For Isolated Focus Item */
+        .standalone-unfold-stage {
+            width: 90%;
+            max-width: min(480px, 88vw);
+            max-height: 72vh;
+            overflow-y: auto;
+            background: #FFFDF4;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            transform: perspective(1200px) rotateX(90deg);
+            transform-origin: top center;
+            opacity: 0;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.6s ease;
+            transform-style: preserve-3d;
+        }
+
+        .standalone-unfold-stage::before {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background-image: var(--paper-texture);
+            pointer-events: none;
+        }
+
+        .modal-canvas-overlay.active .standalone-unfold-stage {
+            transform: perspective(1200px) rotateX(0deg);
+            opacity: 1;
+        }
+
+        .unfolded-note-header {
+            font-size: 1rem;
+            color: var(--pink-rose);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            font-family: 'Pacifico', cursive;
+        }
+
+        .unfolded-note-body {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-align: left;
+            padding: 0 4px;
+        }
+
+        .generic-close-anchor {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #A09098;
+            z-index: 100;
+            transition: color 0.2s;
+        }
+        .generic-close-anchor:hover { color: var(--pink-rose); }
+
+        /* --- SCENE 4 DESIGN LAYOUT: THE SYSTEM GRADIENT FINALE --- */
+        #scene4 {
+            background: linear-gradient(135deg, #FFB6C1 0%, #FEC89E 50%, #D8B4F8 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .final-wish-statement {
+            font-family: 'Pacifico', cursive;
+            font-size: clamp(2.8rem, 6vw, 5rem);
+            color: var(--gold-accent);
+            text-shadow: 2px 4px 15px rgba(58, 47, 53, 0.3);
+            margin-top: 40px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 2s ease, transform 2s cubic-bezier(0.165, 0.84, 0.44, 1);
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .final-wish-statement.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* --- HANDWRITTEN KEEPSAKE NOTE --- */
+        .keepsake-note-taped {
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+            background: #FFFDF0;
+            padding: 12px 20px;
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: rgba(58, 47, 53, 0.85);
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.05);
+            transform: rotate(-4deg);
+            z-index: 100;
+            border: 1px solid rgba(58,47,53,0.1);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.5s ease 1s;
+        }
+
+        .keepsake-note-taped.visible {
+            opacity: 0.85;
+        }
+
+        .keepsake-note-taped::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--paper-texture);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .keepsake-tape {
+            position: absolute;
+            top: -10px;
+            left: 30%;
+            width: 40%;
+            height: 18px;
+            background: rgba(254, 219, 208, 0.5);
+            backdrop-filter: blur(0.5px);
+            border-left: 2px dashed rgba(255,255,255,0.4);
+            border-right: 2px dashed rgba(255,255,255,0.4);
+            transform: rotate(2deg);
+        }
+
+        /* Scroll-to-top button */
+        #scroll-top-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: var(--pink-rose);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(255, 105, 180, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+        #scroll-top-btn:hover {
+            transform: translateY(-5px);
+        }
+        #scroll-top-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Decorative Elements */
+        .dec-torn-paper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            background: #FFF8E7;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 97% 100%, 93% 55%, 90% 90%, 86% 45%, 82% 85%, 78% 40%, 74% 80%, 70% 35%, 66% 75%, 62% 30%, 58% 70%, 54% 25%, 50% 65%, 46% 20%, 42% 60%, 38% 15%, 34% 55%, 30% 10%, 26% 50%, 22% 5%, 18% 45%, 14% 0%, 10% 40%, 6% 85%, 3% 50%, 0% 80%);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .dec-paperclips-container {
+            position: absolute;
+            top: 80px;
+            right: 60px;
+            transform: rotate(20deg);
+            display: flex;
+            gap: 12px;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .dec-paperclip {
+            width: 16px;
+            height: 44px;
+            border: 3px solid #90A4AE;
+            border-radius: 8px;
+            background: transparent;
+            box-shadow: 4px 0 0 -1px #90A4AE, 4px 0 0 1px #B0BEC5;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        .dec-paperclip:nth-child(2) {
+            transform: rotate(25deg);
+        }
+
+
+
+        .dec-washi-bookmark {
+            position: absolute;
+            top: 45%;
+            right: -18px;
+            width: 45px;
+            height: 80px;
+            background: repeating-linear-gradient(45deg, 
+              rgba(255,105,180,0.3) 0px, rgba(255,105,180,0.3) 8px, 
+              rgba(255,182,193,0.2) 8px, rgba(255,182,193,0.2) 16px);
+            border-radius: 4px 0 0 4px;
+            box-shadow: -2px 2px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .dec-washi-label {
+            font-family: 'Dancing Script', cursive;
+            font-size: 0.7rem;
+            color: rgba(120,60,80,0.7);
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        /* Responsive Layout Rules override triggers */
+        @media (max-width: 768px) {
+
+            /* GLOBAL */
+            body, html {
+                font-size: 14px;
+            }
+
+            .app-scene {
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
+            /* SCENE 1 */
+            .typewriter-output {
+                font-size: 1.6rem;
+                max-width: 92%;
+                min-height: 3rem;
+            }
+
+            #scene1-desk {
+                height: 45%;
+            }
+
+            .polaroid-intro-node {
+                padding: 8px 8px 36px 8px;
+            }
+
+            /* SCENE 2 */
+            #scene2 {
+                padding: 0 12px 20px;
+            }
+
+            .scrapbook-desk-plane {
+                padding-bottom: 10px;
+                width: 100%;
+            }
+
+            .interactive-headline-block {
+                flex-direction: column;
+                align-items: center;
+                padding: 0 12px;
+                margin-top: 16px;
+                margin-bottom: 16px;
+                gap: 16px;
+            }
+
+            .headline-text-group {
+                max-width: 100%;
+                text-align: center;
+            }
+
+            .main-scrapbook-title {
+                font-size: clamp(2.2rem, 9vw, 3.5rem);
+                text-align: center;
+                display: block;
+                width: 100%;
+            }
+
+            .main-scrapbook-subtitle {
+                font-size: clamp(1rem, 3.5vw, 1.4rem);
+                text-align: center;
+            }
+
+            /* PROFILE FRAME — stack vertically on mobile */
+            .profile-photo-anchor {
+                width: 100%;
+                max-width: 340px;
+                height: auto;
+                aspect-ratio: 4 / 3;
+                margin: 0 auto 20px auto;
+                transform: none !important;
+                animation: none !important;
+                opacity: 1 !important;
+                padding: 8px;
+            }
+
+            .profile-photo-anchor img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            /* MOVIE TAPE STRIPS — single column on mobile */
+            #movie-tape-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 28px;
+                width: 100%;
+                padding: 0 8px;
+            }
+
+            .film-strip-piece,
+            .tape-piece,
+            [class*="tape"] {
+                width: 90vw !important;
+                max-width: 340px !important;
+                margin: 0 auto !important;
+            }
+
+            /* BUTTONS */
+            .button-paper-row {
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+                width: 100%;
+                padding: 0 16px;
+                margin-top: 16px;
+            }
+
+            .paper-tag-button,
+            .btn-confidential-note,
+            .btn-stack-notes {
+                width: 88%;
+                max-width: 320px;
+                text-align: center;
+                font-size: 1.1rem;
+                padding: 16px 24px;
+            }
+
+            /* STICKY NOTES — hide on mobile to avoid clutter */
+            .pinned-sticky {
+                display: none;
+            }
+
+            /* SCRAPBOOK DECORATIVE ELEMENTS — hide on mobile */
+            .s1-corner-decor,
+            .s2-washi-stripe,
+            .washi-tape-overlay,
+            .paperclip-overlay {
+                display: none;
+            }
+
+            /* SCENE 3 */
+            #scene3 {
+                padding: 20px 12px;
+            }
+
+            .back-nav-tag {
+                top: 12px;
+                left: 12px;
+                font-size: 1rem;
+                padding: 8px 14px;
+            }
+
+            .giant-central-envelope {
+                width: 88vw;
+                max-width: 340px;
+                height: auto;
+                aspect-ratio: 3 / 2;
+            }
+
+            .giant-wax-seal-container {
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 56px;
+                height: 56px;
+            }
+
+            .giant-wax-seal {
+                width: 50px;
+                height: 50px;
+                font-size: 0.85rem;
+            }
+
+            .paper-inside {
+                width: 110px;
+                height: 80px;
+                font-size: 1.4rem;
+            }
+
+            .capsule-scatter-yard {
+                overflow: visible;
+            }
+
+            .folded-note-item {
+                width: 140px;
+                height: 88px;
+                font-size: 0.95rem;
+                padding: 8px;
+            }
+
+            /* LETTER MODAL */
+            .standalone-unfold-stage {
+                width: 94vw;
+                max-width: 94vw;
+                padding: 24px 18px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            .unfolded-note-body {
+                font-size: 1.05rem;
+                line-height: 1.65;
+            }
+
+            .unfolded-note-header {
+                font-size: 0.9rem;
+            }
+
+            /* SCENE 4 */
+            #scene4 {
+                padding: 20px 16px;
+            }
+
+            .final-wish-statement {
+                font-size: clamp(1.8rem, 6vw, 3rem);
+                max-width: 94%;
+            }
+
+            .typewriter-output {
+                font-size: 1.5rem;
+                max-width: 94%;
+            }
+
+            .s4-floating-word {
+                font-size: 1.8rem;
+            }
+
+            /* CURSOR TRAIL — disable on touch devices */
+            .cursor-trail-dot {
+                display: none;
+            }
+
+            /* FUR CANVAS — reduce fiber density on mobile */
+            #s3-fur-canvas {
+                opacity: 0.7;
+            }
+
+            /* MODAL OVERLAY */
+            .modal-canvas-overlay {
+                padding: 12px;
+            }
+
+            .zoomed-photo-container {
+                max-width: 96%;
+                padding: 12px 12px 48px 12px;
+            }
+
+            .zoomed-photo-container img {
+                max-height: 50vh;
+            }
+
+            /* KEEPSAKE NOTE */
+            .keepsake-note-taped {
+                bottom: 12px;
+                right: 12px;
+                font-size: 0.9rem;
+                padding: 8px 14px;
+            }
+
+            /* SCROLL TOP BUTTON */
+            #scroll-top-btn {
+                bottom: 16px;
+                right: 16px;
+                width: 42px;
+                height: 42px;
+                font-size: 1.4rem;
+            }
+        }
+
+        /* EXTRA BREAKPOINT FOR VERY SMALL PHONES */
+        @media (max-width: 390px) {
+
+            .main-scrapbook-title {
+                font-size: 2rem;
+            }
+
+            .giant-central-envelope {
+                width: 95vw;
+            }
+
+            .folded-note-item {
+                width: 120px;
+                height: 80px;
+                font-size: 0.85rem;
+            }
+
+            .paper-tag-button,
+            .btn-confidential-note,
+            .btn-stack-notes {
+                width: 95%;
+                font-size: 1rem;
+                padding: 14px 18px;
+            }
+
+            .unfolded-note-body {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="stage-container">
+        <div id="environment-canvas"></div>
+
+        <section class="app-scene scene-active" id="scene1">
+            <div class="scene1-bg-container">
+            </div>
+            <div id="scene1-desk"></div>
+            <div class="typewriter-output cursor-blink" id="scene1-typewriter"></div>
+        </section>
+
+        <section class="app-scene" id="scene2">
+            <div class="scrapbook-desk-plane">
+                <div id="desk-grid-canvas"></div>
+                
+                <!-- Decorative Elements -->
+                <div class="dec-torn-paper"></div>
+                <div class="dec-paperclips-container">
+                    <div class="dec-paperclip"></div>
+                    <div class="dec-paperclip"></div>
+                </div>
+
+                <div class="dec-washi-bookmark">
+                    <span class="dec-washi-label">2026</span>
+                </div>
+                <div class="pinned-sticky" style="top: 750px; right: 2%; transform: rotate(6deg);">
+                    <svg class="pushpin" viewBox="0 0 24 24" fill="#FF5252"><path d="M16 11V5.5C16 4.67 15.33 4 14.5 4h-5C8.67 4 8 4.67 8 5.5V11L6 14v2h5v5l1 2 1-2v-5h5v-2l-2-3z"/></svg>
+                    <div class="sticky-text">you are someone's favourite story ✨</div>
+                </div>
+                <div class="pinned-sticky" style="top: 1350px; left: 2%; transform: rotate(-5deg);">
+                    <svg class="pushpin" viewBox="0 0 24 24" fill="#FF5252"><path d="M16 11V5.5C16 4.67 15.33 4 14.5 4h-5C8.67 4 8 4.67 8 5.5V11L6 14v2h5v5l1 2 1-2v-5h5v-2l-2-3z"/></svg>
+                    <div class="sticky-text">the storm is just weather. you are the sky 🌤</div>
+                </div>
+                <div class="pinned-sticky" style="top: 1950px; right: 2%; transform: rotate(10deg);">
+                    <svg class="pushpin" viewBox="0 0 24 24" fill="#FF5252"><path d="M16 11V5.5C16 4.67 15.33 4 14.5 4h-5C8.67 4 8 4.67 8 5.5V11L6 14v2h5v5l1 2 1-2v-5h5v-2l-2-3z"/></svg>
+                    <div class="sticky-text">collect the good moments. press them here like flowers 🌷</div>
+                </div>
+
+                <div class="s2-washi-stripe" style="top: 300px; left: -10px; transform: rotate(-45deg);"></div>
+                <div class="s2-washi-stripe" style="top: 700px; right: -10px; transform: rotate(45deg);"></div>
+
+                <header class="interactive-headline-block">
+                    <div class="headline-text-group">
+                        <h1 class="main-scrapbook-title">To the dearest Malak ✨</h1>
+                    </div>
+                    <div class="headline-photo-group">
+                        <div class="profile-photo-anchor" id="main-portrait-node">
+                            <img src="malak.jfif" alt="Malak Profile Image" onerror="this.onerror=null; this.src='./malak.png'; if(!this.complete||!this.naturalWidth){ this.src='./malak.jpeg'; }">
+                        </div>
+                        <p class="main-scrapbook-subtitle">For the girl who is about to begin one of her life changing years and who is so so ready for it.</p>
+                    </div>
+                </header>
+
+                <div id="movie-tape-container"></div>
+
+                <div class="button-paper-row">
+                    <button class="paper-tag-button" id="btn-for-your-eyes">For Malak's eyes only 💌</button>
+                    <button class="paper-tag-button" id="btn-open-when">Read these when... 📩</button>
+                </div>
+
+                <div class="keepsake-note-taped" id="keepsake-note">
+                    <div class="keepsake-tape"></div>
+                    Made before the storm began. ❤️
+                </div>
+            </div>
+        </section>
+
+        <section class="app-scene" id="scene3">
+            <div class="back-nav-tag" id="leave-capsule-trigger">← Back to Scrapbook</div>
+            
+            <div class="giant-central-envelope" id="master-capsule-envelope">
+                <div class="envelope-back"></div>
+                <div class="envelope-front-left"></div>
+                <div class="envelope-front-right"></div>
+                <div class="envelope-front-bottom"></div>
+                <div class="giant-envelope-flap" id="giant-flap"></div>
+                <div class="envelope-papers" id="envelope-papers-inside">
+                    <div class="paper-inside p1">📖</div>
+                    <div class="paper-inside p2">💌</div>
+                    <div class="paper-inside p3">✨</div>
+                </div>
+                <div class="giant-wax-seal-container" id="wax-seal-btn">
+                    <div class="giant-wax-seal">Open</div>
+                </div>
+            </div>
+
+            <div class="capsule-scatter-yard" id="scatter-notes-yard"></div>
+        </section>
+
+        <section class="app-scene" id="scene4">
+            <div class="typewriter-output cursor-blink" id="scene4-typewriter"></div>
+            <h2 class="final-wish-statement" id="outro-monument-text">Good luck, Malak ❤️</h2>
+        </section>
+    </div>
+
+    <div class="modal-canvas-overlay" id="global-modal-overlay">
+        <div id="modal-content-slot"></div>
+    </div>
+
+    <div id="scroll-top-btn">↑</div>
+
+    <script>
+        /* --- NARRATIVE COMPONENT CONSTANTS AND PROPERTY STRUCTS --- */
+        const s1TypewriterLines = [
+            "Before the Storm...",
+            "Before the exams.",
+            "Before the pressure.",
+            "Before the late nights.",
+            "Before everything begins."
+        ];
+
+        const realImages = [
+            "img 1.jfif", "img 2.jfif", "img 3.jfif", "img 4.jfif",
+            "1e925b9a-49c4-49cf-8dd8-af368d2e97b7.jfif",
+            "494d5da3-5743-4d5b-8187-09b18e9ebce9.jfif",
+            "4e71d653-4f81-49ea-b31c-5a93496bae45.jfif",
+            "5425dce8-cc6e-406b-bd1b-485ae8309f9b.jfif",
+            "859e5c60-574d-4542-9cca-b2142e4f20e8.jfif",
+            "8cefc951-fbac-4138-a606-7d56ae165adf.jfif",
+            "a3eb477b-951c-4da5-b365-41a186efeac2.jfif",
+            "bb6e2673-b6bf-47e5-b45e-37837f0a48a1.jfif"
+        ];
+
+        const polaroidsDataset = [
+            { src: "placeholder", caption: "She carries a whole world in her smile." },
+            { src: "placeholder", caption: "Braver than she'll ever give herself credit for." },
+            { src: "placeholder", caption: "The girl who figures it out, every single time." },
+            { src: "placeholder", caption: "She carries whole worlds in that smile." },
+            { src: "placeholder", caption: "She thinks she's not ready. She already is." },
+            { src: "placeholder", caption: "Even on hard days, she is still the light." },
+            { src: "placeholder", caption: "Built from softness and an iron kind of strength." },
+            { src: "placeholder", caption: "She doesn't see what we see. Lucky us." },
+            { src: "placeholder", caption: "Quiet about it, but capable of everything." },
+            { src: "placeholder", caption: "The kind of person rooms feel better for having." },
+            { src: "placeholder", caption: "She bends. She never breaks. Never." },
+            { src: "placeholder", caption: "Before the storm, and after, still her." }
+        ];
+
+        // Assign images randomly
+        const shuffledImages = [...realImages].sort(() => Math.random() - 0.5);
+        polaroidsDataset.forEach((item, idx) => {
+            item.src = shuffledImages[idx % shuffledImages.length];
+        });
+
+        const openWhenDataset = [
+            {
+                label: "Open when you feel like you are not enough",
+                text: "You are reading this because that voice got loud again. The one that lists everything you are not and somehow forgets everything you are. So let me remind you. You did not get this far by accident. Every hard thing you survived, you survived completely. Not halfway. Not almost. Completely. You are not behind. You are not less. You are exactly and entirely enough. Right now. As you are. Without changing a single thing."
+            },
+            {
+                label: "Open when you feel like you cannot do it",
+                text: "Before you decide that, think about the last time you were sure you could not do something. And then think about what actually happened. You did it. Maybe not perfectly. Maybe not easily. But you did it. That is your pattern. Not giving up. Not quitting. Finding the way through even when there seemed to be no way. You have done it before and you will do it now. Start with one small thing. Just one. The rest will follow."
+            },
+            {
+                label: "Open when you feel like you are falling behind",
+                text: "There is no race. I know it feels like there is. I know everyone around you seems to be moving faster or doing more or figuring it out before you. But they are on their road and you are on yours. Your timeline is not wrong just because it is different. Every single thing that is meant for you will still be there when you arrive. Nothing good that belongs to you will leave without you. Keep going at your pace. It is the right pace."
+            },
+            {
+                label: "Open when you feel completely lost",
+                text: "Being lost is not the same as being gone. You are still here. Still standing. Still trying to find the way even while reading this. That already says everything about who you are. You do not have to know where you are going right now. You just have to know that you are someone worth finding the way for. And you are. So take a breath. Put one foot forward. You do not need the whole map. Just the next step."
+            },
+            {
+                label: "Open when you need to feel safe",
+                text: "Close your eyes for a second. You are okay. Right now, in this moment, you are okay. Nothing is required of you in this exact breath except to exist and to rest. You are allowed to be soft. You are allowed to need comfort. You are allowed to put everything down for a moment and just be. You are so loved. Not for what you do or achieve or become. Just for being you. That love does not have conditions. It does not run out. You are safe."
+            },
+            {
+                label: "Open when you are angry or overwhelmed",
+                text: "Feel it. Do not shrink it or swallow it or apologize for it. You are allowed to be angry. You are allowed to be overwhelmed. These feelings are not weakness. They are proof that you care deeply and that you have been carrying a lot. So feel it fully. And then, when you are ready, remember that the fire inside you is the same energy that will carry you forward. It just needs somewhere to go. You will find that place. You always do."
+            },
+            {
+                label: "Open when you miss how things used to feel",
+                text: "Missing something means it was real and it mattered. That warmth you are looking for is not gone forever. It lives in you because you lived those moments and they shaped you. You are allowed to grieve what has changed. But also know that ahead of you there are moments you have not felt yet that will mean just as much. New versions of joy that are waiting specifically for who you are becoming. The best of it is not behind you. So much of it is still coming."
+            }
+        ];
+
+        const letterTextPayload = `There is something I need you to truly hear, not just read.
+
+You have it. You have always had it. The potential that you keep searching for outside of yourself — it has been living inside you this whole time, quietly and patiently, waiting for you to notice it.
+
+The worries you carry — and I know you carry so many — they are like clouds. Heavy, grey, convincing clouds that hang so low sometimes they feel like the whole sky. But they are not the sky. You are the sky. Wide and deep and full of more light than you can currently see.
+
+The clouds tell you that you are not ready. The clouds tell you that others are more prepared, more capable, more deserving. The clouds lie.
+
+Because I have watched you. I have seen you figure out things that would have stopped other people completely. I have seen you get back up in ways you do not even give yourself credit for. I have seen you love deeply, think carefully, and keep going even when going felt impossible.
+
+That is not average. That is extraordinary.
+
+So when the clouds come — and they will come — I want you to remember this letter. Remember that someone who knows you completely, every beautiful complicated piece of you, looked at you and saw not a girl who might make it, but a girl who already has everything she needs.
+
+The storm is coming. You are more than ready.
+Go show them who you are. 🌸`;
+
+        const s4OutroLines = [
+            "The storm will come.",
+            "And then it will pass.",
+            "But before all of that...",
+            "You were here.",
+            "You laughed.",
+            "You dreamed.",
+            "You were loved."
+        ];
+
+        /* --- IMMERSIVE PARTICLES ENGINE CONFIGURATION --- */
+        function initEnvironmentalAmbientEngine() {
+            const container = document.getElementById('environment-canvas');
+            const totalCircles = 4, totalClouds = 2, totalPaperScraps = 6;
+
+            // Translucent floating circular orbs execution 
+            for(let i=0; i<totalCircles; i++) {
+                const orb = document.createElement('div');
+                orb.classList.add('particle');
+                let diameter = Math.random() * 80 + 40;
+                orb.style.width = diameter + 'px';
+                orb.style.height = diameter + 'px';
+                orb.style.left = Math.random() * 100 + 'vw';
+                orb.style.top = Math.random() * 100 + 'vh';
+                container.appendChild(orb);
+                animateOrbLifecycle(orb);
+            }
+
+            // Distribute moving clouds vectors background positioning matrices
+            for(let i=0; i<totalClouds; i++) {
+                const cloud = document.createElement('div');
+                cloud.classList.add('cloud-element');
+                let diameter = Math.random() * 250 + 150;
+                cloud.style.width = diameter + 'px';
+                cloud.style.height = diameter + 'px';
+                cloud.style.left = Math.random() * 100 + 'vw';
+                cloud.style.top = Math.random() * 80 + 'vh';
+                container.appendChild(cloud);
+                animateCloudLifecycle(cloud);
+            }
+
+            // Distribute floating paper shreds properties metrics
+            for(let i=0; i<totalPaperScraps; i++) {
+                const scrap = document.createElement('div');
+                scrap.classList.add('paper-scrap');
+                let width = Math.random() * 12 + 6;
+                let height = Math.random() * 16 + 8;
+                scrap.style.width = width + 'px';
+                scrap.style.height = height + 'px';
+                scrap.style.left = Math.random() * 100 + 'vw';
+                scrap.style.top = Math.random() * 100 + 'vh';
+                container.appendChild(scrap);
+                animateScrapLifecycle(scrap);
+            }
+        }
+
+        function animateOrbLifecycle(el) {
+            let startX = parseFloat(el.style.left), startY = parseFloat(el.style.top);
+            let duration = Math.random() * 15000 + 15000;
+            let rangeX = Math.random() * 100 - 50, rangeY = Math.random() * 100 - 50;
+
+            el.animate([
+                { transform: 'translate(0px, 0px) scale(1)', opacity: 0.2 },
+                { transform: `translate(${rangeX}px, ${rangeY}px) scale(1.15)`, opacity: 0.5 },
+                { transform: 'translate(0px, 0px) scale(1)', opacity: 0.2 }
+            ], { duration: duration, iterations: Infinity, easing: 'ease-in-out' });
+        }
+
+        function animateCloudLifecycle(el) {
+            let duration = Math.random() * 45000 + 35000;
+            el.animate([
+                { transform: 'translateX(0vw)' },
+                { transform: 'translateX(110vw)' }
+            ], { duration: duration, iterations: Infinity, easing: 'linear' });
+        }
+
+        function animateScrapLifecycle(el) {
+            let duration = Math.random() * 20000 + 10000;
+            let rotStart = Math.random() * 360;
+            el.animate([
+                { transform: `translateY(0vh) rotate(${rotStart}deg)`, opacity: 0.6 },
+                { transform: `translateY(-105vh) translateX(${Math.random()*40-20}px) rotate(${rotStart + 720}deg)`, opacity: 0 }
+            ], { duration: duration, iterations: Infinity, easing: 'linear' });
+        }
+
+        function initScene1ScrapbookElements() {
+            const container = document.querySelector('.scene1-bg-container') || document.getElementById('scene1');
+            const shadesOfPink = [
+                'rgba(255, 182, 193, 0.35)',
+                'rgba(255, 105, 180, 0.2)',
+                'rgba(244, 143, 177, 0.25)',
+                'rgba(255, 228, 225, 0.4)'
+            ];
+            
+            // Circles
+            for (let i = 0; i < 15; i++) {
+                const circle = document.createElement('div');
+                circle.classList.add('s1-circle');
+                const size = Math.random() * 60 + 30;
+                circle.style.width = `${size}px`;
+                circle.style.height = `${size}px`;
+                circle.style.backgroundColor = shadesOfPink[Math.floor(Math.random() * shadesOfPink.length)];
+                circle.style.left = `${Math.random() * 100}vw`;
+                circle.style.top = `${Math.random() * 100}vh`;
+                container.appendChild(circle);
+                animateS1FloatingElement(circle, 10000 + Math.random() * 15000);
+            }
+            
+            // Twinkling stars
+            for (let i = 0; i < 12; i++) {
+                const star = document.createElement('div');
+                star.classList.add('s1-star');
+                star.innerHTML = Math.random() > 0.5 ? '✦' : '✨';
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                star.style.animationDelay = `${Math.random() * 3}s`;
+                container.appendChild(star);
+            }
+            
+            // Tiny hearts
+            for (let i = 0; i < 10; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('s1-heart');
+                heart.innerHTML = '❤️';
+                heart.style.left = `${Math.random() * 100}vw`;
+                heart.style.top = `${Math.random() * 100}vh`;
+                container.appendChild(heart);
+                animateS1FloatingElement(heart, 12000 + Math.random() * 12000);
+            }
+            
+            // Light particles
+            for (let i = 0; i < 15; i++) {
+                const p = document.createElement('div');
+                p.classList.add('s1-light-particle');
+                const size = Math.random() * 6 + 3;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${Math.random() * 100}vw`;
+                p.style.top = `${Math.random() * 100}vh`;
+                container.appendChild(p);
+                animateS1FloatingElement(p, 8000 + Math.random() * 10000);
+            }
+        }
+        
+        function animateS1FloatingElement(el, duration) {
+            const rangeX = Math.random() * 80 - 40;
+            const rangeY = Math.random() * 80 - 40;
+            el.animate([
+                { transform: 'translate(0px, 0px) scale(1)', opacity: 0.3 },
+                { transform: `translate(${rangeX}px, ${rangeY}px) scale(1.1)`, opacity: 0.7 },
+                { transform: 'translate(0px, 0px) scale(1)', opacity: 0.3 }
+            ], { duration: duration, iterations: Infinity, easing: 'ease-in-out' });
+        }
+
+        /* --- DRIVER SCRIPT TYPEWRITER ANIMATION LOGIC (WITH SKIP SUPPORT) --- */
+        function triggerTypewriterEngine(domNode, textArray, finalCallback) {
+            let lineIdx = 0;
+            let charIdx = 0;
+            let typingTimer = null;
+            let pauseTimer = null;
+            let state = 'typing'; // 'typing' | 'paused' | 'done'
+
+            domNode.classList.add('cursor-blink');
+            domNode.style.cursor = 'pointer';
+            domNode.title = 'Tap to skip';
+
+            function isLastLine() { return lineIdx === textArray.length - 1; }
+
+            // Check if this is Scene 1 typewriter node to enable background click skipping
+            let bgNode = null;
+            if (domNode.id === 'scene1-typewriter') {
+                bgNode = document.getElementById('scene1');
+            }
+
+            function finishEngine() {
+                if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
+                if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
+                domNode.classList.remove('cursor-blink');
+                domNode.style.cursor = 'default';
+                domNode.title = '';
+                state = 'done';
+                domNode.removeEventListener('click', handleSkip);
+                domNode.removeEventListener('touchend', handleSkip);
+                if (bgNode) {
+                    bgNode.removeEventListener('click', handleSkip);
+                    bgNode.removeEventListener('touchend', handleSkip);
+                }
+                if (finalCallback) finalCallback();
+            }
+
+            function showCurrentLineFull() {
+                if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
+                if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
+                domNode.textContent = textArray[lineIdx];
+                charIdx = textArray[lineIdx].length;
+                state = 'paused';
+                if (isLastLine()) {
+                    setTimeout(finishEngine, 700);
+                } else {
+                    pauseTimer = setTimeout(advanceLine, 1800);
+                }
+            }
+
+            function advanceLine() {
+                if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
+                lineIdx++;
+                if (lineIdx >= textArray.length) { finishEngine(); return; }
+                charIdx = 0;
+                domNode.textContent = '';
+                state = 'typing';
+                startTypingLine();
+            }
+
+            function handleSkip(e) {
+                e.stopPropagation();
+                if (state === 'typing') {
+                    showCurrentLineFull();
+                } else if (state === 'paused' && !isLastLine()) {
+                    if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
+                    advanceLine();
+                }
+            }
+
+            domNode.addEventListener('click', handleSkip);
+            domNode.addEventListener('touchend', handleSkip, { passive: true });
+
+            if (bgNode) {
+                bgNode.addEventListener('click', handleSkip);
+                bgNode.addEventListener('touchend', handleSkip, { passive: true });
+            }
+
+            function startTypingLine() {
+                const currentString = textArray[lineIdx];
+                typingTimer = setInterval(() => {
+                    charIdx++;
+                    domNode.textContent = currentString.slice(0, charIdx);
+                    if (charIdx >= currentString.length) {
+                        clearInterval(typingTimer);
+                        typingTimer = null;
+                        state = 'paused';
+                        if (isLastLine()) {
+                            setTimeout(finishEngine, 700);
+                        } else {
+                            pauseTimer = setTimeout(advanceLine, 1800);
+                        }
+                    }
+                }, 70);
+            }
+
+            startTypingLine();
+        }
+
+        /* --- SCENE 1 PIPELINE OPERATION MANAGEMENT --- */
+        function executeScene1Lifecycle() {
+            const desk = document.getElementById('scene1-desk');
+            const introPhotoCount = 4;
+            const isMobile = window.innerWidth <= 768;
+            const polaroids = [];
+
+            // First, build polaroid nodes positioned off-screen
+            for (let i = 0; i < introPhotoCount; i++) {
+                const pNode = document.createElement('div');
+                pNode.classList.add('polaroid-intro-node');
+                pNode.style.transition = 'none'; // Overridden via Javascript animations
+                const baseSize = isMobile ? 140 : 180;
+                pNode.style.width  = (baseSize + i * 12) + 'px';
+                pNode.style.height = (baseSize * 1.22 + i * 15) + 'px';
+                
+                // Position off-screen initially
+                pNode.style.transform = 'translate(0, 120vh) scale(0.5) rotate(-15deg)';
+                pNode.style.zIndex = '50';
+
+                const img = document.createElement('img');
+                img.src = `img ${i + 1}.jfif`;
+                img.onerror = function() {
+                    this.onerror = null;
+                    this.src = `https://placehold.co/250x250/FFB6C1/FFFFFF?text=Memory+${i + 1}`;
+                };
+                pNode.appendChild(img);
+                desk.appendChild(pNode);
+                polaroids.push(pNode);
+            }
+
+            // Function to animate each polaroid one-by-one with two-phase animation
+            function animatePolaroid(index) {
+                if (index >= introPhotoCount) return;
+
+                const pNode = polaroids[index];
+                const spread      = isMobile ? 70 : 115;
+                const offsetX     = (index - 1.5) * spread;
+                const offsetY     = (index % 2 === 0 ? -1 : 1) * (20 + Math.random() * 35);
+                const finalRot    = (index % 2 === 0 ? 1 : -1) * (8 + Math.random() * 20);
+
+                // Phase 1 (POP FORWARD): shoots in, scaled up to ~1.35x and centered
+                pNode.style.zIndex = '100';
+                pNode.style.transition = 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.15), box-shadow 0.8s ease';
+                pNode.style.transform = 'translate(0px, -40px) scale(1.35) rotate(0deg)';
+                pNode.style.boxShadow = 'var(--shadow-lift)';
+
+                // Keep in shown state for 1.7s (total phase 1 time 2.5s)
+                setTimeout(() => {
+                    // Phase 2 (PLACE DOWN): scales down and settles to final position
+                    pNode.style.transition = 'transform 1.0s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 1.0s ease';
+                    pNode.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${finalRot}deg)`;
+                    pNode.style.boxShadow = 'var(--shadow-polaroid)';
+                    pNode.style.zIndex = (10 + index).toString();
+
+                    // Wait for placement animation to fully settle, then trigger next polaroid
+                    setTimeout(() => {
+                        animatePolaroid(index + 1);
+                    }, 1000);
+                }, 2500);
+            }
+
+            // Start polaroid entrance animation sequence after a slight delay
+            setTimeout(() => {
+                animatePolaroid(0);
+            }, 400);
+
+            // Start typewriter line printer after 1800ms
+            setTimeout(() => {
+                const twNode = document.getElementById('scene1-typewriter');
+                triggerTypewriterEngine(twNode, s1TypewriterLines, () => {
+                    setTimeout(() => {
+                        switchApplicationActiveScene('scene1', 'scene2', () => {
+                            executeScene2CinematicsPipeline();
+                        });
+                    }, 1000);
+                });
+            }, 1800);
+        }
+
+        function switchApplicationActiveScene(exitId, enterId, completionHook) {
+            const exitNode = document.getElementById(exitId);
+            const enterNode = document.getElementById(enterId);
+
+            exitNode.classList.remove('scene-active');
+            setTimeout(() => {
+                exitNode.style.display = 'none';
+                enterNode.style.display = 'flex';
+                enterNode.offsetHeight; // Force browser geometry processing update sequence
+                enterNode.classList.add('scene-active');
+                if (completionHook) completionHook();
+            }, 1200);
+        }
+
+        /* --- SCENE 2 SCRAPBOOK COMPONENT INTERACTION CONTROLLER --- */
+
+        function executeScene2CinematicsPipeline() {
+            document.body.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 32 32\'%3E%3Cpath fill=\'%23FFF\' stroke=\'%23FF69B4\' stroke-width=\'2\' stroke-linejoin=\'round\' d=\'M3 3 L3 25 L9 19 L14 30 L18 28 L13 17 L19 17 Z\'/%3E%3C/svg%3E") 0 0, auto';
+            document.getElementById('scene2').addEventListener('click', (e) => spawnSparkleBurst(e.clientX, e.clientY));
+            
+            executeMagicalTrailRun(() => {
+                const portrait = document.getElementById('main-portrait-node');
+                portrait.classList.add('arrived');
+
+                buildMovieTapeLayout();
+                
+                document.getElementById('keepsake-note').classList.add('visible');
+            });
+        }
+
+        function executeMagicalTrailRun(endedHook) {
+            let frameIdx = 0;
+            const totalFrames = 150;
+            
+            function evaluateTrailPosition(t) {
+                let width = window.innerWidth;
+                let height = window.innerHeight;
+                
+                const p0 = { x: width * 0.95, y: height * 0.8 };
+                const p1 = { x: width * 0.4, y: height * 0.95 };
+                const p2 = { x: width * 0.75, y: height * 0.35 };
+                const p3 = { x: width * 0.2, y: height * 0.15 };
+                
+                const mt = 1 - t;
+                const mt2 = mt * mt;
+                const mt3 = mt2 * mt;
+                const t2 = t * t;
+                const t3 = t2 * t;
+                
+                const x = mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x;
+                const y = mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y;
+                
+                return { x, y };
+            }
+
+            let animationTimer = setInterval(() => {
+                let t = frameIdx / totalFrames;
+                let coords = evaluateTrailPosition(t);
+                
+                spawnMagicalSparkle(coords.x, coords.y);
+                if (frameIdx % 2 === 0) {
+                    spawnMagicalSparkle(coords.x + (Math.random() * 20 - 10), coords.y + (Math.random() * 20 - 10), true);
+                }
+                
+                frameIdx++;
+                if (frameIdx > totalFrames) {
+                    clearInterval(animationTimer);
+                    spawnSparkleBurst(coords.x, coords.y);
+                    if (endedHook) endedHook();
+                }
+            }, 16);
+        }
+
+        function spawnMagicalSparkle(x, y, isSecondary = false) {
+            const container = document.getElementById('scene2');
+            const spark = document.createElement('div');
+            spark.classList.add('magical-sparkle-trail');
+            
+            const colors = ['#FFD700', '#FF69B4', '#FFF', '#E6E6FA', '#FFB6C1'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = isSecondary ? (Math.random() * 6 + 2) : (Math.random() * 12 + 6);
+            
+            spark.style.width = `${size}px`;
+            spark.style.height = `${size}px`;
+            spark.style.backgroundColor = color;
+            spark.style.left = `${x}px`;
+            spark.style.top = `${y + container.scrollTop}px`;
+            spark.style.boxShadow = `0 0 ${size * 1.5}px ${color}`;
+            
+            container.appendChild(spark);
+            
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 30 + 10;
+            const destX = Math.cos(angle) * distance;
+            const destY = Math.sin(angle) * distance;
+            
+            spark.animate([
+                { transform: 'translate(0, 0) scale(1) rotate(0deg)', opacity: 1 },
+                { transform: `translate(${destX}px, ${destY}px) scale(0.1) rotate(${Math.random()*360}deg)`, opacity: 0 }
+            ], {
+                duration: Math.random() * 1000 + 800,
+                easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)',
+                fill: 'forwards'
+            });
+            
+            setTimeout(() => spark.remove(), 1800);
+        }
+
+        function spawnSparkleBurst(x, y) {
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    spawnMagicalSparkle(x + (Math.random() * 80 - 40), y + (Math.random() * 40 - 20));
+                }, i * 15);
+            }
+        }
+
+        function buildMovieTapeLayout() {
+            const container = document.getElementById('movie-tape-container');
+            container.innerHTML = '';
+
+            const shuffledDataset = [...polaroidsDataset].sort(() => Math.random() - 0.5);
+
+            shuffledDataset.forEach((data, idx) => {
+                const row = document.createElement('div');
+                row.classList.add('film-snippet-row');
+                row.style.animationDelay = `${idx * 0.15}s`;
+                const rot = (Math.random() * 6 - 3);
+                const textRot = (Math.random() * 4 - 2);
+
+                row.innerHTML = `
+                    <div class="movie-tape-container-piece" style="transform: rotate(${rot}deg)">
+                        <div class="movie-tape-frame">
+                            <div class="viewfinder-bracket bracket-tl"></div>
+                            <div class="viewfinder-bracket bracket-tr"></div>
+                            <div class="viewfinder-bracket bracket-bl"></div>
+                            <div class="viewfinder-bracket bracket-br"></div>
+                            <div class="film-number">${String(idx + 1).padStart(3, '0')} ▪ 35mm</div>
+                            <img src="${data.src}" alt="Memory" onerror="this.onerror=null; this.src='https://placehold.co/250x250/FFB6C1/FFFFFF?text=Memory+${idx + 1}';">
+                        </div>
+                    </div>
+                    <div class="movie-tape-caption" style="transform: rotate(${textRot}deg)">${data.caption}</div>
+                `;
+
+                row.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    launchFocusedPhotoModalPreviewer(data.src, data.caption);
+                });
+
+                container.appendChild(row);
+            });
+        }
+
+        /* --- GLOBAL PREVIEW MODAL MODULE DRIVER SYSTEM --- */
+        const globalModalOverlay = document.getElementById('global-modal-overlay');
+        const modalContentSlot = document.getElementById('modal-content-slot');
+
+        function toggleModalActiveFrameState(htmlContentPayload, activeBool) {
+            const scene2 = document.getElementById('scene2');
+            if (activeBool) {
+                modalContentSlot.innerHTML = htmlContentPayload;
+                globalModalOverlay.classList.add('active');
+                if (scene2) scene2.classList.add('scroll-locked');
+            } else {
+                globalModalOverlay.classList.remove('active');
+                if (scene2) scene2.classList.remove('scroll-locked');
+                setTimeout(() => { modalContentSlot.innerHTML = ''; }, 500);
+            }
+        }
+
+        globalModalOverlay.addEventListener('click', () => {
+            // Dismiss active focus models layers gracefully automatically on ambient background bounding clicks checks
+            const unfoldingCard = document.querySelector('.unfolding-paper-module');
+            if(unfoldingCard) {
+                // Realistic closure matrix animation override mapping properties values sequences down vectors paths
+                unfoldingCard.style.transform = "rotateX(85deg) scaleY(0.1)";
+                unfoldingCard.style.opacity = "0";
+                setTimeout(() => { toggleModalActiveFrameState("", false); }, 500);
+            } else {
+                toggleModalActiveFrameState("", false);
+            }
+        });
+
+        function launchFocusedPhotoModalPreviewer(src, caption) {
+            const markup = `
+                <div class="zoomed-photo-container" onclick="event.stopPropagation()">
+                    <div class="generic-close-anchor" onclick="toggleModalActiveFrameState('', false)">✕</div>
+                    <img src="${src}" alt="Zoomed View">
+                    <div class="caption">${caption}</div>
+                </div>
+            `;
+            toggleModalActiveFrameState(markup, true);
+        }
+
+        /* --- BUTTON 1 CORE INTERFACE MODULE: FOR YOUR EYES ONLY LETTER --- */
+        document.getElementById('btn-for-your-eyes').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const letterMarkup = `
+                <div class="origami-letter-viewport" onclick="event.stopPropagation()">
+                    <div class="unfolding-paper-module">
+                        <div class="generic-close-anchor" id="close-letter-trigger">✕</div>
+                        <article class="handwritten-letter-pane">
+                            <h2 class="letter-header">For Malak's eyes only 🌸</h2>
+                            ${letterTextPayload.split('\n').map(line => line.trim() ? `<p class="letter-paragraph">${line}</p>` : `<br>`).join('')}
+                        </article>
+                    </div>
+                </div>
+            `;
+            toggleModalActiveFrameState(letterMarkup, true);
+
+            const wrapper = document.querySelector('.unfolding-paper-module');
+            if (wrapper) {
+                // Initialize start state: folded flat, opacity 0
+                wrapper.style.transition = 'none';
+                wrapper.style.transform = 'rotateX(80deg) scaleY(0.05)';
+                wrapper.style.opacity = '0';
+                
+                // Force layout reflow
+                wrapper.offsetHeight;
+                
+                // Opacity fades in across the entire duration (1.05s)
+                wrapper.style.transition = 'opacity 1.05s ease-out, transform 0.3s ease-out';
+                
+                // Stage 1 (0.3s): rotateX from 80deg to 40deg, scaleY to 0.4
+                setTimeout(() => {
+                    wrapper.style.opacity = '1';
+                    wrapper.style.transform = 'rotateX(40deg) scaleY(0.4)';
+                }, 50);
+
+                // Stage 2 (0.3s): rotateX to 10deg, scaleY to 0.85 (after Stage 1 + 100ms delay)
+                setTimeout(() => {
+                    wrapper.style.transition = 'opacity 0.7s ease-out, transform 0.3s ease-out';
+                    wrapper.style.transform = 'rotateX(10deg) scaleY(0.85)';
+                }, 450);
+
+                // Stage 3 (0.25s): rotateX settles to 0deg, scaleY to 1 (after Stage 2 + 100ms delay)
+                setTimeout(() => {
+                    wrapper.style.transition = 'opacity 0.3s ease-out, transform 0.25s ease-out';
+                    wrapper.style.transform = 'rotateX(0deg) scaleY(1)';
+                }, 850);
+            }
+
+            // Capture internal closing click sequences overrides mapping metrics operations parameters arrays properties
+            document.getElementById('close-letter-trigger').addEventListener('click', () => {
+                const wrapper = document.querySelector('.unfolding-paper-module');
+                if (wrapper) {
+                    wrapper.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+                    wrapper.style.transform = "rotateX(80deg) scaleY(0.05)";
+                    wrapper.style.opacity = "0";
+                }
+                setTimeout(() => { toggleModalActiveFrameState("", false); }, 500);
+            });
+        });
+
+
+
+
+        /* --- SCENE 3 SYSTEM ROUTE CONTROL FUNCTIONS PIPELINE: TIME CAPSULE --- */
+        let setOfCapsuleOpenedNotesTrackingMap = new Set();
+
+        document.getElementById('btn-open-when').addEventListener('click', () => {
+            switchApplicationActiveScene('scene2', 'scene3', () => {});
+        });
+
+        document.getElementById('leave-capsule-trigger').addEventListener('click', () => {
+            switchApplicationActiveScene('scene3', 'scene2', () => {});
+        });
+
+        document.getElementById('wax-seal-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            const envelope = document.getElementById('master-capsule-envelope');
+            const flap = document.getElementById('giant-flap');
+            const seal = document.getElementById('wax-seal-btn');
+            
+            // Flip the flap
+            flap.style.transform = "rotateX(180deg)";
+            
+            // Hide the wax seal container
+            seal.style.opacity = "0";
+            seal.style.pointerEvents = "none";
+            
+            // Add opened class and stagger reveal papers after flap open animation completes (800ms)
+            setTimeout(() => {
+                envelope.classList.add('opened');
+                const papers = document.querySelectorAll('.paper-inside');
+                papers.forEach((paper, idx) => {
+                    setTimeout(() => {
+                        paper.classList.add('revealed');
+                    }, idx * 150);
+                });
+            }, 800);
+        });
+
+        document.getElementById('envelope-papers-inside').addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            const envelope = document.getElementById('master-capsule-envelope');
+            
+            envelope.style.transform = "scale(0.85) translateY(180px)";
+            envelope.style.opacity = "0.3";
+            envelope.style.pointerEvents = "none";
+            
+            executeCapsuleNoteYardFanoutSequence();
+        });
+
+        document.getElementById('master-capsule-envelope').addEventListener('click', function(e) {
+            if (this.classList.contains('opened')) {
+                e.stopPropagation();
+                this.style.transform = "scale(0.85) translateY(180px)";
+                this.style.opacity = "0.3";
+                this.style.pointerEvents = "none";
+                executeCapsuleNoteYardFanoutSequence();
+            }
+        });
+
+        function executeCapsuleNoteYardFanoutSequence() {
+            const yard = document.getElementById('scatter-notes-yard');
+            yard.innerHTML = ""; // Hard clear execution paths structures fields elements allocation tracks
+
+            const labelMappings = {
+                "Open when you feel like you are not enough": { short: "when you're not enough", emoji: "🤍" },
+                "Open when you feel like you cannot do it": { short: "when you can't do it", emoji: "🕯" },
+                "Open when you feel like you are falling behind": { short: "when you fall behind", emoji: "🍃" },
+                "Open when you feel completely lost": { short: "when you feel lost", emoji: "🧭" },
+                "Open when you need to feel safe": { short: "when you need safety", emoji: "🫧" },
+                "Open when you are angry or overwhelmed": { short: "when you're overwhelmed", emoji: "🌊" },
+                "Open when you miss how things used to feel": { short: "when you miss it all", emoji: "🌙" }
+            };
+
+            openWhenDataset.forEach((item, idx) => {
+                const noteNode = document.createElement('div');
+                noteNode.classList.add('folded-note-item');
+                
+                const mapping = labelMappings[item.label] || { short: item.label, emoji: "📝" };
+                noteNode.innerHTML = `
+                    <div style="display: block; text-align: center; font-size: 1.6rem; margin-bottom: 6px; pointer-events: none; line-height: 1;">${mapping.emoji}</div>
+                    <div style="display: block; pointer-events: none; line-height: 1.3;">${mapping.short}</div>
+                `;
+
+                // Setup coordinates offsets across workspace 
+                let angle = (idx - 3.5) * 15; 
+                let offsetX = (idx - 3.5) * 45;
+                let offsetY = -150 - (Math.abs(idx - 3.5) * 12);
+
+                // Safe initial positioning frame mappings metrics values checks coordinates loops allocation properties
+                let initLeft = (window.innerWidth / 2) - 97;
+                let initTop = (window.innerHeight / 2) - 52;
+                noteNode.style.left = initLeft + 'px';
+                noteNode.style.top = initTop + 'px';
+
+                yard.appendChild(noteNode);
+                noteNode.offsetHeight; // Force drawing canvas state updates pipeline updates
+
+                // Spin vectors target maps properties loops configurations fields operations metrics
+                noteNode.style.opacity = "1";
+                noteNode.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0px) rotate(${angle}deg)`;
+
+                // Track and execute high precision mouse/touch layout calculations matrices properties loops layers bounds positions
+                registerFoldedCardDraggingMechanics(noteNode, offsetX, offsetY, angle);
+
+                // Append click processing routing layers actions data elements paths
+                noteNode.addEventListener('click', (e) => {
+                    // Filter drag processing micro movements thresholds deviations safely values
+                    if(noteNode.dataset.draggedTrue === 'true') return;
+                    launchIsolatedCapsuleNoteUnfolder(item, noteNode);
+                });
+            });
+        }
+
+        function launchIsolatedCapsuleNoteUnfolder(itemStruct, domNode) {
+            const unfoldingMarkup = `
+                <div class="standalone-unfold-stage" onclick="event.stopPropagation()">
+                    <div class="generic-close-anchor" id="close-unfolded-note-trigger">✕</div>
+                    <div class="unfolded-note-header">${itemStruct.label}</div>
+                    <div class="unfolded-note-body">"${itemStruct.text}"</div>
+                </div>
+            `;
+            toggleModalActiveFrameState(unfoldingMarkup, true);
+
+            document.getElementById('close-unfolded-note-trigger').addEventListener('click', () => {
+                toggleModalActiveFrameState("", false);
+                
+                // Track usage parameters state changes allocations arrays properties elements values loops paths checks fields
+                setOfCapsuleOpenedNotesTrackingMap.add(itemStruct.label);
+                
+                // Minimize element opacity footprint slightly to show read state
+                domNode.style.opacity = '0.35';
+
+                // Check terminal layout condition matching rules to advance onto finale
+                if(setOfCapsuleOpenedNotesTrackingMap.size === openWhenDataset.length) {
+                    setTimeout(() => {
+                        switchApplicationActiveScene('scene3', 'scene4', () => {
+                            executeTerminalFinalePipeline();
+                        });
+                    }, 1200);
+                }
+            });
+        }
+
+        /* --- DRAG MATRIX MULTI INPUT TRACKING SCHEME IMPLEMENTATION --- */
+        function registerFoldedCardDraggingMechanics(element, baseOffsetX, baseOffsetY, baseAngle) {
+            let currentX = baseOffsetX;
+            let currentY = baseOffsetY;
+            let initialX = 0;
+            let initialY = 0;
+            let activeTrackingBool = false;
+
+            element.addEventListener('mousedown', initializeDragSequence, { passive: false });
+            element.addEventListener('touchstart', initializeDragSequence, { passive: false });
+
+            function initializeDragSequence(e) {
+                // Isolate input event types coordinates extraction frames properties fields processing allocation channels bounds checks
+                let pointerObj = e.type === 'touchstart' ? e.touches[0] : e;
+                initialX = pointerObj.clientX;
+                initialY = pointerObj.clientY;
+                activeTrackingBool = true;
+                element.dataset.draggedTrue = 'false';
+                element.style.zIndex = "2000"; // Push focus layer depth instantly 
+
+                if(e.type === 'mousedown') {
+                    document.addEventListener('mousemove', computeDragTranslation, { passive: false });
+                    document.addEventListener('mouseup', terminateDragSequence, { passive: false });
+                } else {
+                    document.addEventListener('touchmove', computeDragTranslation, { passive: false });
+                    document.addEventListener('touchend', terminateDragSequence, { passive: false });
+                }
+            }
+
+            function computeDragTranslation(e) {
+                if (!activeTrackingBool) return;
+                let pointerObj = e.type === 'touchmove' ? e.touches[0] : e;
+                
+                let deltaX = pointerObj.clientX - initialX;
+                let deltaY = pointerObj.clientY - initialY;
+
+                // Threshold processing gate filtering micro adjustments accidental slips definitions
+                if(Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+                    element.dataset.draggedTrue = 'true';
+                }
+
+                currentX += deltaX;
+                currentY += deltaY;
+
+                initialX = pointerObj.clientX;
+                initialY = pointerObj.clientY;
+
+                element.style.transform = `translate3d(${currentX}px, ${currentY}px, 0px) rotate(${baseAngle}deg)`;
+            }
+
+            function terminateDragSequence() {
+                activeTrackingBool = false;
+                element.style.zIndex = "100";
+                document.removeEventListener('mousemove', computeDragTranslation);
+                document.removeEventListener('mouseup', terminateDragSequence);
+                document.removeEventListener('touchmove', computeDragTranslation);
+                document.removeEventListener('touchend', terminateDragSequence);
+            }
+        }
+
+        /* --- SCENE 4: GRAND FINALE LIFECYCLE --- */
+        function executeTerminalFinalePipeline() {
+            const canvasOutro = document.getElementById('scene4-typewriter');
+            
+            const words = ["brave", "loved", "unstoppable", "enough", "dreamer", "fighter"];
+            words.forEach((word, idx) => {
+                const wNode = document.createElement('div');
+                wNode.classList.add('s4-floating-word');
+                wNode.textContent = word;
+                let topPos = Math.random() * 100;
+                let leftPos = Math.random() * 100;
+                if (topPos > 35 && topPos < 65) topPos = topPos > 50 ? 80 : 20;
+                if (leftPos > 30 && leftPos < 70) leftPos = leftPos > 50 ? 85 : 15;
+                wNode.style.top = `${topPos}%`;
+                wNode.style.left = `${leftPos}%`;
+                wNode.style.animationDelay = `${idx * 1.2}s`;
+                document.getElementById('scene4').appendChild(wNode);
+            });
+
+            triggerTypewriterEngine(canvasOutro, s4OutroLines, () => {
+                setTimeout(() => {
+                    const monument = document.getElementById('outro-monument-text');
+                    monument.classList.add('visible');
+                }, 800);
+            });
+        }
+
+        /* --- SCENE 3 INTERACTIVE FUR BACKGROUND GENERATOR --- */
+        function initScene3FurBackground() {
+            const scene3 = document.getElementById('scene3');
+            if (!scene3) return;
+
+            // Base background color
+            scene3.style.backgroundColor = '#1C1018';
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.id = 's3-fur-canvas';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '0';
+            
+            // Append as first child
+            scene3.insertBefore(canvas, scene3.firstChild);
+
+            // Resize handler
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+
+            // Generate fibers
+            const fibers = [];
+            const fiberColors = [
+                "rgba(180,120,140,0.55)", "rgba(140,80,110,0.45)", 
+                "rgba(200,150,170,0.4)", "rgba(100,60,80,0.5)",
+                "rgba(220,180,200,0.35)"
+            ];
+
+            const numFibers = 900;
+            for (let i = 0; i < numFibers; i++) {
+                fibers.push({
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    angle: Math.random() * Math.PI,
+                    length: Math.random() * 12 + 10, // random between 10 and 22
+                    thickness: Math.random() * 0.8 + 0.6, // random between 0.6 and 1.4
+                    color: fiberColors[Math.floor(Math.random() * fiberColors.length)],
+                    bendAmount: 0
+                });
+            }
+
+            // Track mouse on #scene3 element with throttle
+            let mouseX = -1000;
+            let mouseY = -1000;
+            let lastMove = 0;
+            scene3.addEventListener('mousemove', (e) => {
+                const now = Date.now();
+                if (now - lastMove < 16) return;
+                lastMove = now;
+                const rect = scene3.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+            });
+            scene3.addEventListener('mouseleave', () => {
+                mouseX = -1000;
+                mouseY = -1000;
+            });
+
+            window.addEventListener('resize', () => {
+                const oldW = canvas.width;
+                const oldH = canvas.height;
+                resizeCanvas();
+                fibers.forEach(f => {
+                    f.x = (f.x / (oldW || 1)) * canvas.width;
+                    f.y = (f.y / (oldH || 1)) * canvas.height;
+                });
+            });
+
+            // Animation loop
+            const ctx = canvas.getContext('2d');
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+
+                for (let i = 0; i < numFibers; i++) {
+                    const fiber = fibers[i];
+                    const dx = fiber.x - mouseX;
+                    const dy = fiber.y - mouseY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 120) {
+                        const nx = dx / (dist || 1);
+                        const ny = dy / (dist || 1);
+                        const px = -Math.sin(fiber.angle);
+                        const py = Math.cos(fiber.angle);
+                        const pushDirection = nx * px + ny * py;
+                        const bendIntensity = (1 - dist / 120) * 1.4;
+                        const targetBend = bendIntensity * pushDirection;
+                        fiber.bendAmount += (targetBend - fiber.bendAmount) * 0.1;
+                    } else {
+                        fiber.bendAmount += (0 - fiber.bendAmount) * 0.04;
+                    }
+
+
+
+                    const endX = fiber.x + Math.cos(fiber.angle) * fiber.length;
+                    const endY = fiber.y + Math.sin(fiber.angle) * fiber.length;
+
+                    const midX = fiber.x + Math.cos(fiber.angle) * fiber.length * 0.5;
+                    const midY = fiber.y + Math.sin(fiber.angle) * fiber.length * 0.5;
+
+                    const perpX = -Math.sin(fiber.angle);
+                    const perpY = Math.cos(fiber.angle);
+
+                    const ctrlX = midX + perpX * fiber.bendAmount * 18;
+                    const ctrlY = midY + perpY * fiber.bendAmount * 18;
+
+                    ctx.beginPath();
+                    ctx.moveTo(fiber.x, fiber.y);
+                    ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+                    ctx.strokeStyle = fiber.color;
+                    ctx.lineWidth = fiber.thickness;
+                    ctx.lineCap = "round";
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+                requestAnimationFrame(render);
+            }
+            render();
+        }
+
+        /* --- INITIAL ENGINE ENTRY HOOK --- */
+        window.addEventListener('DOMContentLoaded', () => {
+            initEnvironmentalAmbientEngine();
+            initScene3FurBackground();
+            initScene1ScrapbookElements();
+            executeScene1Lifecycle();
+
+            // Cursor fancy trail
+            const dots = [];
+            for (let i = 0; i < 10; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('cursor-trail-dot');
+                document.body.appendChild(dot);
+                dots.push({ el: dot, x: 0, y: 0 });
+            }
+
+            let cursorX = 0; let cursorY = 0;
+            document.addEventListener('mousemove', e => {
+                cursorX = e.clientX; cursorY = e.clientY;
+            });
+
+            function animateCursorTrail() {
+                let x = cursorX; let y = cursorY;
+                dots.forEach((dot, index) => {
+                    dot.x += (x - dot.x) * 0.09;
+                    dot.y += (y - dot.y) * 0.09;
+                    dot.el.style.transform = `translate(${dot.x}px, ${dot.y}px) scale(${(10 - index) / 10})`;
+                    dot.el.style.opacity = ((10 - index) / 10) * 0.4;
+                    x = dot.x; y = dot.y;
+                });
+                requestAnimationFrame(animateCursorTrail);
+            }
+            animateCursorTrail();
+
+            // Pinned stickies logic
+            document.querySelectorAll('.pushpin').forEach(pin => {
+                pin.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    pin.classList.add('popped');
+                    pin.parentElement.classList.add('dropped');
+                    spawnSparkleBurst(e.clientX, e.clientY);
+                });
+            });
+
+            // Global click burst Easter egg
+            document.addEventListener('click', (e) => {
+                for(let i=0; i<4; i++) {
+                    setTimeout(() => spawnMagicalSparkle(e.clientX, e.clientY, true), i * 40);
+                }
+            });
+
+            // Scroll-to-top logic
+            document.querySelectorAll('.app-scene').forEach(scene => {
+                scene.addEventListener('scroll', () => {
+                    const btn = document.getElementById('scroll-top-btn');
+                    if (scene.scrollTop > 300) {
+                        btn.classList.add('visible');
+                    } else {
+                        btn.classList.remove('visible');
+                    }
+                });
+            });
+
+            document.getElementById('scroll-top-btn').addEventListener('click', () => {
+                const active = document.querySelector('.scene-active');
+                if (active) active.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // Disable fur canvas mouse interaction on touch devices
+            if ('ontouchstart' in window) {
+                const furCanvas = document.getElementById('s3-fur-canvas');
+                if (furCanvas) furCanvas.style.display = 'none';
+                
+                // Replace fur with simple static gradient on touch devices
+                const scene3 = document.getElementById('scene3');
+                if (scene3) {
+                    scene3.style.background = 
+                        'radial-gradient(ellipse at 50% 0%, #2D1B2E 0%, #1A0D1E 40%, #0D0810 100%)';
+                }
+            }
+
+            // Resize fur canvas if window resizes
+            window.addEventListener('resize', () => {
+                const furCanvas = document.getElementById('s3-fur-canvas');
+                if (furCanvas) {
+                    furCanvas.width = window.innerWidth;
+                    furCanvas.height = window.innerHeight;
+                }
+            }, { passive: true });
+        });
+    </script>
+</body>
+</html>
